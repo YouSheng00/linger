@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script>document.documentElement.classList.add('js');</script>
+<title>Linger — the menu</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="256x256" href="favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="../Ref%20Picture/linger-wordmark.png">
+<style>
+  /* ───────── tokens (shared with index) ───────── */
+  :root{
+    --paper:#FFFFFF;
+    --paper-2:#F3F3F1;
+    --ink:#26211B;
+    --ink-soft:rgba(38,33,27,0.60);
+    --ink-faint:rgba(38,33,27,0.38);
+    --hair:rgba(38,33,27,0.16);
+    --sage:#7E8A6B;
+    --sage-deep:#5F6B4F;
+    --serif:"Quicksand",system-ui,sans-serif;
+    --sans:"Jost","PingFang SC",system-ui,sans-serif;
+    --ease:cubic-bezier(.2,.7,.2,1);
+    --gutter:clamp(22px,5vw,72px);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;scroll-padding-top:clamp(64px,9vh,84px);}
+  body{font-family:var(--sans);color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  ::selection{background:rgba(126,138,107,0.26);}
+  a{color:inherit;text-decoration:none;}
+  img{display:block;width:100%;height:100%;object-fit:cover;}
+
+  .vignette{position:fixed;inset:0;z-index:80;pointer-events:none;
+    background:radial-gradient(122% 94% at 50% 40%, transparent 56%, rgba(38,33,27,0.045) 100%);}
+  .grain{position:fixed;inset:0;z-index:90;pointer-events:none;opacity:0.055;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.62' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+  .eyebrow{font-family:var(--sans);font-size:11px;font-weight:500;letter-spacing:2.6px;text-transform:uppercase;color:var(--ink-soft);}
+  .display{font-family:var(--serif);font-weight:300;letter-spacing:-0.012em;line-height:0.98;color:var(--ink);}
+  .prose{font-family:var(--sans);font-weight:300;font-size:clamp(15px,1.2vw,18px);line-height:1.9;color:var(--ink-soft);}
+
+  /* reveal (gated on .js) */
+  .js .reveal{opacity:0;transform:translateY(16px);transition:opacity 1s var(--ease),transform 1s var(--ease);}
+  .reveal.in{opacity:1;transform:none;}
+  .reveal.d1{transition-delay:.1s;} .reveal.d2{transition-delay:.2s;}
+  @media(prefers-reduced-motion:reduce){ .js .reveal{transition-duration:.3s!important;transition-delay:0!important;} }
+
+  /* ───────── nav (shared) ───────── */
+  nav{position:fixed;top:0;left:0;width:100%;z-index:100;display:flex;align-items:flex-end;
+    padding:24px var(--gutter);transition:padding .5s var(--ease),background .6s var(--ease),box-shadow .6s var(--ease),backdrop-filter .6s var(--ease);}
+  nav.scrolled{padding:14px var(--gutter);background:rgba(255,255,255,0.80);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);box-shadow:0 1px 0 var(--hair);}
+  nav .logo{height:26px;width:auto;object-fit:contain;display:block;}
+  nav .links{display:flex;gap:34px;margin-left:clamp(28px,4.5vw,64px);}
+  nav .links a{font-family:var(--sans);font-size:10.5px;font-weight:500;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink-soft);transition:color .3s;position:relative;padding-bottom:2px;}
+  nav .links a::after{content:"";position:absolute;left:0;bottom:0;width:0;height:1px;background:var(--sage);transition:width .35s var(--ease);}
+  nav .links a:hover{color:var(--ink);} nav .links a:hover::after{width:100%;}
+  nav .links a.current{color:var(--ink);} nav .links a.current::after{width:100%;}
+  nav .cta-wrap{margin-left:auto;}
+  nav .cta{font-family:var(--sans);font-size:10.5px;font-weight:500;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink);
+    border-bottom:1px solid var(--sage);padding-bottom:3px;transition:color .3s,border-color .3s;}
+  nav .cta:hover{color:var(--sage-deep);}
+  @media(max-width:860px){ nav .links{display:none;} }
+
+  /* ───────── the broadsheet — two balanced columns ───────── */
+  .sheet{max-width:1180px;margin:0 auto;padding:150px var(--gutter) 0;}
+
+  /* branch selector — pick a café; prices follow its currency, menu varies a little */
+  .branchbar{display:flex;justify-content:center;flex-wrap:wrap;gap:clamp(16px,3vw,46px);
+    margin-bottom:clamp(42px,6vw,76px);}
+  .branch-tab{position:relative;background:none;border:0;cursor:pointer;padding:5px 2px;color:var(--ink-faint);
+    font-family:var(--sans);font-size:11px;font-weight:500;letter-spacing:2px;text-transform:uppercase;
+    transition:color .4s var(--ease);}
+  .branch-tab.is-active{color:var(--ink);}
+  .branch-tab.is-active::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1px;background:var(--sage);}
+  @media(hover:hover){ .branch-tab:not(.is-active):hover{color:var(--ink-soft);} }
+
+  .course{margin-top:clamp(58px,8vw,108px);}
+  .course:first-of-type{margin-top:0;}
+  .course-eyebrow{font-family:var(--sans);font-size:11px;font-weight:500;letter-spacing:2.6px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:14px;}
+  .course-name{font-family:var(--serif);font-weight:300;font-size:clamp(30px,4vw,52px);letter-spacing:-.012em;line-height:1;
+    color:var(--ink);margin-bottom:clamp(22px,3vw,40px);}
+  .course-name .amp{color:var(--sage);}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:0 clamp(34px,5vw,76px);align-items:start;}
+  .col{min-width:0;}
+  .subsection{margin:0 0 clamp(22px,2.6vw,34px);}
+  .col .subsection:last-child{margin-bottom:0;}
+  .subsection-label{font-family:var(--sans);font-size:10px;font-weight:500;letter-spacing:2.2px;text-transform:uppercase;
+    color:var(--sage-deep);margin-bottom:3px;}
+  .item{border-top:1px solid var(--hair);padding:clamp(9px,1.2vw,14px) 0;}
+  .subsection .item:last-child{border-bottom:1px solid var(--hair);}
+  .item-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;}
+  .item-name{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.15vw,16px);letter-spacing:-.01em;line-height:1.2;
+    color:var(--ink);transition:color .4s var(--ease);}
+  .item-price{font-family:var(--sans);font-weight:500;font-size:12px;letter-spacing:.5px;color:var(--sage-deep);
+    font-variant-numeric:tabular-nums;white-space:nowrap;flex:0 0 auto;}
+  .item-desc{margin-top:5px;font-family:var(--sans);font-weight:300;font-size:11.5px;line-height:1.62;color:var(--ink-soft);}
+  @media(hover:hover){ .item:hover .item-name{color:var(--sage-deep);} }
+
+  /* dot divider between the two movements */
+  .divider{display:flex;align-items:center;justify-content:center;margin:clamp(40px,6vw,76px) auto 0;}
+  .divider .dot{width:6px;height:6px;border-radius:50%;background:var(--sage);}
+
+  /* one column on small screens */
+  @media(max-width:760px){
+    .cols{grid-template-columns:1fr;}
+  }
+
+  /* ───────── footer (shared) ───────── */
+  footer{margin-top:clamp(64px,9vw,120px);background:var(--ink);color:var(--paper);padding:clamp(64px,9vw,110px) var(--gutter) 44px;}
+  footer .top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;border-top:1px solid rgba(244,241,234,0.16);padding-top:54px;}
+  footer .mark{font-family:var(--serif);font-weight:400;font-size:38px;letter-spacing:-.5px;display:inline-flex;align-items:flex-end;}
+  footer .mark .d{width:9px;height:9px;border-radius:50%;background:var(--sage);margin:0 0 8px 3px;}
+  footer .brandcol p{margin-top:16px;font-family:var(--sans);font-weight:300;font-size:13.5px;line-height:1.75;color:rgba(244,241,234,0.6);max-width:280px;}
+  footer h4{font-family:var(--sans);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(244,241,234,0.5);margin-bottom:16px;}
+  footer .col a,footer .col p{display:block;font-family:var(--sans);font-weight:300;font-size:13.5px;color:rgba(244,241,234,0.82);margin-bottom:10px;line-height:1.65;}
+  footer .col a:hover{color:var(--sage);}
+  footer .legal{margin-top:54px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-family:var(--sans);font-size:10.5px;letter-spacing:.6px;color:rgba(244,241,234,0.42);}
+  @media(max-width:760px){ footer .top{grid-template-columns:1fr 1fr;gap:32px;} }
+</style>
+</head>
+<body>
+  <div class="vignette"></div>
+  <div class="grain"></div>
+
+  <!-- ───────── nav ───────── -->
+  <nav id="nav">
+    <a href="index.html#home"><img class="logo" src="../Ref%20Picture/linger-wordmark.png" alt="Linger" width="72" height="26" fetchpriority="high" /></a>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="menu.html" class="current">Menu</a>
+    </div>
+    <div class="cta-wrap"><a href="coffee.html" class="cta">Make your own coffee</a></div>
+  </nav>
+
+  <!-- ───────── the broadsheet ───────── -->
+  <!-- NOTE: prices below are PLACEHOLDERS (S$) — swap in the real values. -->
+  <main class="sheet">
+
+    <!-- branch selector — switches currency + a few items per café -->
+    <div class="branchbar" role="group" aria-label="Choose a café">
+      <button class="branch-tab" type="button" data-branch="london" aria-pressed="false">London</button>
+      <button class="branch-tab" type="button" data-branch="barcelona" aria-pressed="false">Barcelona</button>
+      <button class="branch-tab" type="button" data-branch="hongkong" aria-pressed="false">Hong Kong</button>
+      <button class="branch-tab is-active" type="button" data-branch="singapore" aria-pressed="true">Singapore</button>
+    </div>
+
+    <!-- ───── Coffee ───── -->
+    <section class="course reveal" id="coffee">
+      <div class="course-eyebrow">To drink</div>
+      <h2 class="course-name">Coffee</h2>
+      <div class="cols">
+        <div class="col">
+
+        <div class="subsection">
+          <h3 class="subsection-label">The Signatures</h3>
+          <div class="item">
+            <div class="item-row"><span class="item-name">The Chiaroscuro</span><span class="item-price">7.5</span></div>
+            <p class="item-desc">Double espresso, velvety oat milk, and a whisper of dark Madagascar vanilla.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Dappled Amber</span><span class="item-price">7.5</span></div>
+            <p class="item-desc">Flash-chilled single origin coffee featuring notes of bergamot and black tea.</p>
+          </div>
+          <div class="item" data-hide="london">
+            <div class="item-row"><span class="item-name">Oat Shakerato</span><span class="item-price">7.0</span></div>
+            <p class="item-desc">Double espresso shaken over ice until frothy, strained and finished with creamy oat milk.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Pistachio Latte</span><span class="item-price">7.5</span></div>
+            <p class="item-desc">Rich espresso paired with steamed milk and an artisanal roasted pistachio cream paste.</p>
+          </div>
+          <div class="item" data-only="hongkong">
+            <div class="item-row"><span class="item-name">Yuenyeung</span><span class="item-price">6.5</span></div>
+            <p class="item-desc">Hong Kong's classic — silky milk tea married with a shot of espresso.</p>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-label">The Shaken &amp; Blended Craft</h3>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Chocolate Frappe</span><span class="item-price">8.0</span></div>
+            <p class="item-desc">Blended premium dark chocolate cocoa, fresh milk, and ice, topped with a delicate chocolate drizzle.</p>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-label">Latte &amp; Cappuccino</h3>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Oat Milk Latte</span><span class="item-price">6.5</span></div>
+            <p class="item-desc">Rich espresso balanced with silky, steamed premium oat micro-foam.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Caffè Latte</span><span class="item-price">6.0</span></div>
+            <p class="item-desc">Rich espresso balanced with silky, steamed dairy micro-foam.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Flat White</span><span class="item-price">6.0</span></div>
+            <p class="item-desc">Velvety micro-foam poured over a double ristretto base.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Cappuccino</span><span class="item-price">6.0</span></div>
+            <p class="item-desc">Espresso with equal parts steamed milk and deep, luxurious foam.</p>
+          </div>
+          <div class="item" data-hide="london">
+            <div class="item-row"><span class="item-name">Piccolo Latte</span><span class="item-price">5.5</span></div>
+            <p class="item-desc">A ristretto shot topped with warm silky milk in a small glass.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Iced Latte</span><span class="item-price">6.5</span></div>
+            <p class="item-desc">Chilled milk over ice, marbled with fresh espresso.</p>
+          </div>
+        </div>
+
+        </div>
+        <div class="col">
+
+        <div class="subsection">
+          <h3 class="subsection-label">Espresso Classics</h3>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Espresso</span><span class="item-price">4.0</span></div>
+            <p class="item-desc">Short, intense, single-origin shot.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Macchiato</span><span class="item-price">4.5</span></div>
+            <p class="item-desc">Espresso marked with a dollop of micro-foam.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Cortado</span><span class="item-price">5.5</span></div>
+            <p class="item-desc">Equal parts espresso and warm, textured milk.</p>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-label">Americano</h3>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Caffè Americano</span><span class="item-price">5.5</span></div>
+            <p class="item-desc">Double shot espresso elongated with hot filtered water.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Iced Americano</span><span class="item-price">6.0</span></div>
+            <p class="item-desc">Crisp, clean espresso over iced artisanal water.</p>
+          </div>
+          <div class="item" data-hide="london">
+            <div class="item-row"><span class="item-name">Long Black</span><span class="item-price">5.5</span></div>
+            <p class="item-desc">Espresso extracted directly over hot water, preserving the crema.</p>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-label">Mocha</h3>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Caffè Mocha</span><span class="item-price">6.5</span></div>
+            <p class="item-desc">Espresso blended with 70% dark single-origin chocolate and steamed milk.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">White Chocolate Mocha</span><span class="item-price">6.5</span></div>
+            <p class="item-desc">Espresso with creamy white cocoa butter and textured milk.</p>
+          </div>
+          <div class="item" data-hide="barcelona">
+            <div class="item-row"><span class="item-name">Iced Mocha</span><span class="item-price">7.0</span></div>
+            <p class="item-desc">Chilled dark chocolate milk topped with a fresh espresso float.</p>
+          </div>
+        </div>
+
+        </div>
+      </div>
+    </section>
+
+    <div class="divider reveal" aria-hidden="true"><span class="dot"></span></div>
+
+    <!-- ───── The Kitchen ───── -->
+    <section class="course reveal" id="kitchen">
+      <div class="course-eyebrow">To eat</div>
+      <h2 class="course-name">The Kitchen</h2>
+      <div class="cols">
+        <div class="col">
+
+        <div class="subsection">
+          <h3 class="subsection-label">Pastry &amp; Cakes</h3>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Pistachio Rose Cardamom Cake</span><span class="item-price">12.0</span></div>
+            <p class="item-desc">A layered sponge infused with crushed pistachios, rosewater, and a hint of warm spice.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Burnt Basque Cheesecake</span><span class="item-price">11.0</span></div>
+            <p class="item-desc">Rich, crustless cheesecake baked at a high heat for a beautifully caramelized, bittersweet top.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Dark Chocolate Feuilletine Tart</span><span class="item-price">13.0</span></div>
+            <p class="item-desc">72% Valrhona dark chocolate ganache on a crispy hazelnut wafer crust.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Earl Grey Lavender Mousse Cake</span><span class="item-price">12.0</span></div>
+            <p class="item-desc">Light, floral Earl Grey-infused mousse resting on a delicate almond sponge.</p>
+          </div>
+        </div>
+
+        </div>
+        <div class="col">
+
+        <div class="subsection">
+          <h3 class="subsection-label">Spaghetti</h3>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Truffle Mushroom Aglio Olio</span><span class="item-price">22.0</span></div>
+            <p class="item-desc">Spaghetti tossed in garlic-infused olive oil, wild forest mushrooms, and shaved black truffle.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Smoked Duck Carbonara</span><span class="item-price">24.0</span></div>
+            <p class="item-desc">Classic Roman-style egg yolk and Pecorino Romano sauce, topped with seared smoked duck breast.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Slow-Braised Wagyu Bolognese</span><span class="item-price">28.0</span></div>
+            <p class="item-desc">Rich, 8-hour simmered Wagyu beef ragù over spaghetti, finished with aged Parmigiano-Reggiano.</p>
+          </div>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Prawn &amp; Scallop Pepperoncino</span><span class="item-price">26.0</span></div>
+            <p class="item-desc">Pan-seared tiger prawns and juicy scallops tossed with fresh chili, garlic, and white wine.</p>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3 class="subsection-label">Still Water</h3>
+          <div class="item">
+            <div class="item-row"><span class="item-name">Acqua Panna Mineral Water</span><span class="item-price">8.0</span></div>
+            <p class="item-desc">750ml, naturally filtered Tuscan spring water.</p>
+          </div>
+        </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ───────── footer (shared) ───────── -->
+  <footer>
+    <div class="top">
+      <div class="brandcol">
+        <span class="mark">linger<span class="d"></span></span>
+        <p>A café, composed. Slow coffee and unhurried hours &mdash; the same quiet idea in London, Barcelona, Hong Kong and Singapore.</p>
+      </div>
+      <div class="col">
+        <h4>Visit</h4>
+        <p>9 Queensway, #01-14<br>Singapore 149053</p>
+        <a href="#">Get directions</a>
+        <a href="index.html#branches">All four cafés</a>
+      </div>
+      <div class="col">
+        <h4>Hours</h4>
+        <p>Mon&ndash;Fri &middot; 7.30&ndash;19.00<br>Sat&ndash;Sun &middot; 8.30&ndash;18.00<br>Holidays &middot; 9.00&ndash;17.00</p>
+      </div>
+      <div class="col">
+        <h4>Reach us</h4>
+        <a href="mailto:hello@linger.coffee">hello@linger.coffee</a>
+        <a href="#">Instagram</a>
+        <a href="#">Journal</a>
+      </div>
+    </div>
+    <div class="legal">
+      <span>© 2026 Linger Coffee &middot; Made slowly in four cities</span>
+      <span>Stay a while.</span>
+    </div>
+  </footer>
+
+  <script>
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
+    document.querySelectorAll('.reveal').forEach(function(el){
+      if(el.getBoundingClientRect().top < innerHeight){ requestAnimationFrame(function(){ el.classList.add('in'); }); }
+      else { io.observe(el); }
+    });
+    var nav=document.getElementById('nav');
+    addEventListener('scroll',function(){ if(scrollY>80) nav.classList.add('scrolled'); else nav.classList.remove('scrolled'); },{passive:true});
+
+    /* ───── branch selector — currency + per-café availability ───── */
+    (function(){
+      var BR={
+        singapore:{sym:'S$',  rate:1,    whole:false},
+        london:   {sym:'£',  rate:0.58, whole:false},
+        barcelona:{sym:'€',  rate:0.69, whole:false},
+        hongkong: {sym:'HK$', rate:5.8,  whole:true}
+      };
+      var sheet=document.querySelector('.sheet'); if(!sheet) return;
+      var tabs=sheet.querySelectorAll('.branch-tab');
+      var prices=sheet.querySelectorAll('.item-price');
+      var items=sheet.querySelectorAll('.item');
+      prices.forEach(function(p){ p.setAttribute('data-base', parseFloat(p.textContent)||0); });
+      function money(base,b){ var v=base*b.rate; return b.whole ? b.sym+Math.round(v) : b.sym+(Math.round(v*10)/10).toFixed(1); }
+      function pick(br){
+        var b=BR[br]; if(!b) return;
+        prices.forEach(function(p){ p.textContent=money(parseFloat(p.getAttribute('data-base')),b); });
+        items.forEach(function(it){
+          var only=it.getAttribute('data-only'), hide=it.getAttribute('data-hide'), show=true;
+          if(only && only.split(',').indexOf(br)<0) show=false;
+          if(hide && hide.split(',').indexOf(br)>=0) show=false;
+          it.style.display=show?'':'none';
+        });
+        tabs.forEach(function(t){ var on=t.getAttribute('data-branch')===br; t.classList.toggle('is-active',on); t.setAttribute('aria-pressed',on); });
+      }
+      tabs.forEach(function(t){ t.addEventListener('click',function(){ pick(t.getAttribute('data-branch')); }); });
+      pick('singapore');
+    })();
+  </script>
+</body>
+</html>
